@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TERMIF - Jogo de Termos Técnicos</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              dark: '#080d1a',
+              card: '#0f172a',
+              cardLight: '#182238',
+              border: '#1e293b',
+              green: '#00e676',
+              greenHover: '#00c853',
+              greenLight: '#00ff9d',
+              accent: '#38bdf8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #080d1a;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #080d1a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+
+    .letter-tile {
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      font-weight: 800;
+      user-select: none;
+      border-radius: 12px;
+    }
+
+    .tile-empty {
+      background-color: #182338;
+      border: 1px solid #283752;
+      color: #ffffff;
+    }
+
+    .tile-correct {
+      background-color: #00e676 !important;
+      border-color: #00e676 !important;
+      color: #080d1a !important;
+    }
+
+    .tile-present {
+      background-color: #ffc107 !important;
+      border-color: #ffc107 !important;
+      color: #080d1a !important;
+    }
+
+    .tile-absent {
+      background-color: #0d1322 !important;
+      border-color: #1e293b !important;
+      color: #475569 !important;
+    }
+
+    @keyframes flipTile {
+      0% { transform: rotateX(0deg); }
+      50% { transform: rotateX(90deg); }
+      100% { transform: rotateX(0deg); }
+    }
+
+    .animate-flip {
+      animation: flipTile 0.4s ease forwards;
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+  <header class="w-full px-6 py-5 flex items-center justify-between max-w-7xl mx-auto">
+    <div class="flex items-center gap-1 cursor-pointer" onclick="goToHomeScreen()">
+      <span class="text-2xl md:text-3xl font-black tracking-wider text-white">TERM</span>
+      <span class="text-2xl md:text-3xl font-black tracking-wider text-brand-green">IF</span>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <button onclick="goToHomeScreen()" class="px-4 py-2 text-xs md:text-sm font-bold tracking-wider uppercase bg-[#111827] hover:bg-[#1f2937] text-slate-300 border border-slate-700/80 rounded-full transition-colors">
+        INÍCIO
+      </button>
+      <button onclick="openLeaderboard()" class="px-4 py-2 text-xs md:text-sm font-bold tracking-wider uppercase bg-[#111827] hover:bg-[#1f2937] text-white border border-slate-700 rounded-full transition-colors">
+        PLACAR
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-grow flex flex-col justify-center px-4 py-4 max-w-7xl mx-auto w-full">
+
+    <section id="screen-home" class="w-full max-w-lg mx-auto my-auto py-8 text-center flex flex-col items-center justify-center">
+      <div class="mb-3">
+        <h1 class="text-6xl sm:text-7xl md:text-8xl font-black tracking-wider text-white select-none">
+          TERM<span class="text-brand-green">IF</span>
+        </h1>
+        <p class="text-slate-400 text-xs sm:text-sm font-semibold tracking-[0.25em] uppercase mt-2">
+          DESCUBRA OS TERMOS. APRENDA NA PRÁTICA.
+        </p>
+      </div>
+
+      <div class="w-full max-w-md space-y-3.5 mt-10 px-2">
+        <button onclick="handleHomePlay()" class="w-full bg-brand-green hover:bg-brand-greenHover text-slate-950 font-black text-sm md:text-base tracking-wider uppercase py-4 rounded-full transition-all shadow-xl hover:shadow-brand-green/20">
+          JOGAR
+        </button>
+
+        <button onclick="openLeaderboard()" class="w-full bg-[#111827] hover:bg-[#1f2937] text-white border border-slate-700/80 font-black text-sm md:text-base tracking-wider uppercase py-4 rounded-full transition-all">
+          PLACAR
+        </button>
+
+        <button onclick="openHowToPlayModal()" class="w-full bg-[#111827] hover:bg-[#1f2937] text-white border border-slate-700/80 font-black text-sm md:text-base tracking-wider uppercase py-4 rounded-full transition-all">
+          COMO JOGAR
+        </button>
+      </div>
+    </section>
+
+    <section id="screen-register" class="hidden w-full max-w-xl mx-auto my-auto">
+      <div class="bg-brand-card border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl">
+        <h2 class="text-2xl md:text-3xl font-black text-white mb-1">Cadastro do jogador</h2>
+        <p class="text-slate-400 text-sm mb-6">Só precisamos do seu nome, curso e dificuldade.</p>
+
+        <form id="form-register" onsubmit="handleRegister(event)" class="space-y-6">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">NOME DO JOGADOR</label>
+            <input type="text" id="input-player-name" required placeholder="Digite seu nome..." 
+              class="w-full bg-[#090e1a] border border-slate-700/80 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:border-brand-green transition-colors" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">CURSO</label>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5" id="course-selector">
+              <button type="button" onclick="selectCourse('Técnico em Informática')" class="course-btn border border-brand-green bg-[#090e1a] text-white rounded-xl p-3 text-xs md:text-sm font-semibold text-center transition-all">
+                Técnico em Informática
+              </button>
+              <button type="button" onclick="selectCourse('Técnico em Administração')" class="course-btn border border-slate-800 bg-[#090e1a] text-slate-400 rounded-xl p-3 text-xs md:text-sm font-semibold text-center transition-all">
+                Técnico em Administração
+              </button>
+              <button type="button" onclick="selectCourse('Técnico em Eventos')" class="course-btn border border-slate-800 bg-[#090e1a] text-slate-400 rounded-xl p-3 text-xs md:text-sm font-semibold text-center transition-all">
+                Técnico em Eventos
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">DIFICULDADE</label>
+            <div class="grid grid-cols-3 gap-2.5" id="diff-selector">
+              <button type="button" onclick="selectDifficulty('Fácil', 7)" class="diff-btn border border-brand-green bg-[#090e1a] text-white rounded-xl p-3 text-center transition-all">
+                <div class="font-bold text-sm">Fácil</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">7 tentativas</div>
+              </button>
+              <button type="button" onclick="selectDifficulty('Médio', 6)" class="diff-btn border border-slate-800 bg-[#090e1a] text-slate-400 rounded-xl p-3 text-center transition-all">
+                <div class="font-bold text-sm">Médio</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">6 tentativas</div>
+              </button>
+              <button type="button" onclick="selectDifficulty('Difícil', 5)" class="diff-btn border border-slate-800 bg-[#090e1a] text-slate-400 rounded-xl p-3 text-center transition-all">
+                <div class="font-bold text-sm">Difícil</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">5 tentativas</div>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-brand-green hover:bg-brand-greenHover text-slate-950 font-black text-sm uppercase tracking-wider py-4 rounded-xl transition-all shadow-lg hover:shadow-brand-green/20">
+            COMEÇAR JOGO
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 2. TELA DE SELEÇÃO DE MODO -->
+    <section id="screen-selection" class="hidden w-full max-w-4xl mx-auto my-auto space-y-8">
+      <div class="bg-brand-card border border-slate-800 rounded-2xl p-5 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl md:text-2xl font-black text-white flex items-center gap-2">
+            Olá, <span id="display-player-name" class="text-white">Jogador</span>
+          </h2>
+          <p id="display-player-stats" class="text-slate-400 text-xs md:text-sm mt-1">
+            Técnico em Informática • 0 pts • sequência 0
+          </p>
+        </div>
+        <button onclick="changePlayer()" class="px-5 py-2.5 text-xs font-bold tracking-wider uppercase bg-[#111827] hover:bg-[#1f2937] text-white border border-slate-700 rounded-xl transition-colors">
+          TROCAR JOGADOR
+        </button>
+      </div>
+
+      <div>
+        <h3 class="text-xl font-black text-white mb-4">Escolha o modo</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div onclick="startMode('unico')" class="bg-brand-card hover:border-brand-green/50 border border-slate-800 rounded-2xl p-6 cursor-pointer transition-all hover:-translate-y-1 group">
+            <h4 class="text-lg font-bold text-white mb-2 group-hover:text-brand-green transition-colors">Modo Único</h4>
+            <p class="text-slate-400 text-xs leading-relaxed">Descubra 1 termo técnico do seu curso.</p>
+          </div>
+
+          <div onclick="startMode('duplo')" class="bg-brand-card hover:border-brand-green/50 border border-slate-800 rounded-2xl p-6 cursor-pointer transition-all hover:-translate-y-1 group">
+            <h4 class="text-lg font-bold text-white mb-2 group-hover:text-brand-green transition-colors">Modo Duplo</h4>
+            <p class="text-slate-400 text-xs leading-relaxed">Descubra 2 termos relacionados, lado a lado. Bônus +50.</p>
+          </div>
+
+          <div onclick="startMode('quarteto')" class="bg-brand-card hover:border-brand-green/50 border border-slate-800 rounded-2xl p-6 cursor-pointer transition-all hover:-translate-y-1 group">
+            <h4 class="text-lg font-bold text-white mb-2 group-hover:text-brand-green transition-colors">Modo Quarteto</h4>
+            <p class="text-slate-400 text-xs leading-relaxed">Descubra 4 termos relacionados em grade 2x2. Bônus +100.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. TELA DE GAMEPLAY -->
+    <section id="screen-gameplay" class="hidden w-full max-w-6xl mx-auto flex flex-col space-y-6">
+      <div class="bg-brand-card border border-slate-800 rounded-2xl p-5 md:p-6 flex items-center justify-between">
+        <div>
+          <h2 id="game-mode-title" class="text-xl md:text-2xl font-black text-white">Modo Único</h2>
+          <p id="game-mode-subtitle" class="text-slate-400 text-xs md:text-sm mt-1">
+            Técnico em Informática • 1 termo(s) relacionado(s) ao seu curso
+          </p>
+        </div>
+        <div class="text-right">
+          <div id="game-score-display" class="text-2xl md:text-3xl font-black text-brand-green">0 pts</div>
+          <div id="game-streak-display" class="text-slate-400 text-xs mt-0.5">sequência 0</div>
+        </div>
+      </div>
+
+      <div id="words-boards-container" class="grid gap-6 w-full"></div>
+
+      <div class="flex items-center gap-3 pt-4">
+        <button onclick="goToModeSelection()" class="px-6 py-3 text-xs md:text-sm font-bold tracking-wider uppercase bg-[#0d1527] hover:bg-[#17223b] text-white border border-slate-700/80 rounded-xl transition-all">
+          TROCAR MODO
+        </button>
+        <button onclick="resetCurrentChallenge()" class="px-6 py-3 text-xs md:text-sm font-bold tracking-wider uppercase bg-[#0d1527] hover:bg-[#17223b] text-white border border-slate-700/80 rounded-xl transition-all">
+          NOVO DESAFIO
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="modal-leaderboard" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-brand-card border border-slate-800 rounded-2xl w-full max-w-md p-6 relative">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-xl font-black text-white flex items-center gap-2">
+          <span>Placar Geral</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-green/20 text-brand-green">
+            ● AO VIVO
+          </span>
+        </h3>
+        <button onclick="closeLeaderboard()" class="text-slate-400 hover:text-white font-bold text-lg">&times;</button>
+      </div>
+      <p class="text-xs text-slate-400 mb-4">Sincronizado em tempo real entre todos os jogadores online.</p>
+      <div id="leaderboard-list" class="space-y-3 max-h-80 overflow-y-auto pr-1"></div>
+    </div>
+  </div>
+
+  <div id="modal-how-to-play" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-[#0f172a] border border-slate-800 rounded-2xl w-full max-w-md p-6 relative shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-xl font-black text-white uppercase tracking-wider">Como Jogar</h3>
+        <button onclick="closeHowToPlayModal()" class="text-slate-400 hover:text-white font-bold text-2xl">&times;</button>
+      </div>
+
+      <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+        Adivinhe os termos técnicos do seu curso em poucas tentativas. Após cada palpite, as cores das placas mudam para mostrar o quão perto você está do termo!
+      </p>
+
+      <div class="space-y-3 pt-1">
+        <div class="flex items-center gap-3 bg-[#080d1a] p-3 rounded-xl border border-slate-800">
+          <div class="w-8 h-8 rounded-lg bg-[#00e676] text-[#080d1a] font-extrabold flex items-center justify-center text-sm shrink-0">R</div>
+          <div class="text-xs text-slate-300"><strong>Verde:</strong> A letra está no termo e na <strong>posição correta</strong>.</div>
+        </div>
+
+        <div class="flex items-center gap-3 bg-[#080d1a] p-3 rounded-xl border border-slate-800">
+          <div class="w-8 h-8 rounded-lg bg-[#ffc107] text-[#080d1a] font-extrabold flex items-center justify-center text-sm shrink-0">O</div>
+          <div class="text-xs text-slate-300"><strong>Amarelo:</strong> A letra <strong>existe no termo</strong>, mas está na posição errada.</div>
+        </div>
+
+        <div class="flex items-center gap-3 bg-[#080d1a] p-3 rounded-xl border border-slate-800">
+          <div class="w-8 h-8 rounded-lg bg-[#0d1322] border border-slate-700 text-slate-500 font-extrabold flex items-center justify-center text-sm shrink-0">X</div>
+          <div class="text-xs text-slate-300"><strong>Escuro/Preto:</strong> A letra <strong>NÃO existe</strong> no termo técnico.</div>
+        </div>
+      </div>
+
+      <button onclick="closeHowToPlayModal()" class="w-full bg-brand-green hover:bg-brand-greenHover text-slate-950 font-black text-xs uppercase tracking-wider py-3.5 rounded-xl transition-all">
+        ENTENDI!
+      </button>
+    </div>
+  </div>
+
+  <div id="modal-explanation" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-[#0f172a] border border-slate-800 rounded-2xl w-full max-w-lg p-6 relative shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-black uppercase tracking-wider bg-brand-green/20 text-brand-green px-3 py-1 rounded-full">TERMO ENCONTRADO!</span>
+        </div>
+        <button onclick="closeExplanationModal()" class="text-slate-400 hover:text-white font-bold text-xl">&times;</button>
+      </div>
+
+      <div>
+        <h3 id="exp-word-title" class="text-3xl font-black text-white tracking-wider uppercase text-brand-green mb-1">ALGORITMO</h3>
+        <p id="exp-course-tag" class="text-xs font-semibold text-slate-400">Técnico em Informática</p>
+      </div>
+
+      <div class="space-y-4">
+        <div class="bg-[#080d1a] border border-slate-800 rounded-xl p-4">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-brand-green mb-1.5 flex items-center gap-1.5">
+             O que significa?
+          </h4>
+          <p id="exp-word-meaning" class="text-slate-300 text-sm leading-relaxed">
+            Sequência finita de instruções bem definidas...
+          </p>
+        </div>
+
+        <div class="bg-[#080d1a] border border-slate-800 rounded-xl p-4">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 mb-1.5 flex items-center gap-1.5">
+             Como aplicar na prática?
+          </h4>
+          <p id="exp-word-application" class="text-slate-300 text-sm leading-relaxed">
+            Criação da lógica de autenticação de usuários em uma aplicação web.
+          </p>
+        </div>
+      </div>
+
+      <button onclick="closeExplanationModal()" class="w-full bg-brand-green hover:bg-brand-greenHover text-slate-950 font-black text-sm uppercase tracking-wider py-3.5 rounded-xl transition-all shadow-lg">
+        CONTINUAR JOGANDO
+      </button>
+    </div>
+  </div>
+
+  <!-- FIREBASE CLOUD REAL-TIME DATABASE MODULE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    window.cloudLeaderboard = [];
+    window.dbInstance = null;
+    window.appIdInstance = 'termif-game';
+    window.currentUserId = null;
+    window.pendingCloudSave = false;
+
+    // =========================================================================
+    // COLE SUAS CHAVES DO FIREBASE AQUI QUANDO HOSPEDAR EM UM SITE PRÓPRIO:
+    // =========================================================================
+    const customFirebaseConfig = {
+      apiKey: "AIzaSyBQBbKrIgMyRmaeRV72LnHArMW8gix7IOA",
+      authDomain: "termiff-52f04.firebaseapp.com",
+      projectId: "termiff-52f04",
+      storageBucket: "termiff-52f04.firebasestorage.app",
+      messagingSenderId: "399894374678",
+      appId: "1:399894374678:web:3bf34c8eac365afe464837"
+    };
+
+    async function setupFirebase() {
+      try {
+        let firebaseConfig = null;
+        
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+          firebaseConfig = JSON.parse(__firebase_config);
+        } else if (customFirebaseConfig.apiKey !== "SEU_API_KEY") {
+          firebaseConfig = customFirebaseConfig;
+        }
+
+        if (!firebaseConfig) {
+          console.warn("Firebase config não configurada. O placar salvará localmente.");
+          return;
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        window.dbInstance = db;
+        window.currentUserId = auth.currentUser ? auth.currentUser.uid : 'player_' + Date.now();
+
+        if (window.currentUserId) {
+          if (window.pendingCloudSave || (state.player && state.player.name && state.player.name !== 'Jogador')) {
+            await window.savePlayerToCloud();
+          }
+
+          const isArtifact = typeof __firebase_config !== 'undefined' && __firebase_config;
+          const leaderboardCol = isArtifact 
+            ? collection(db, 'artifacts', typeof __app_id !== 'undefined' ? __app_id : 'termif-game', 'public', 'data', 'leaderboard')
+            : collection(db, 'leaderboard');
+          
+          onSnapshot(leaderboardCol, (snapshot) => {
+            const list = [];
+            snapshot.forEach((docSnap) => {
+              const data = docSnap.data();
+              if (data && data.name) {
+                list.push(data);
+              }
+            });
+            list.sort((a, b) => (b.score || 0) - (a.score || 0));
+            window.cloudLeaderboard = list;
+
+            const modal = document.getElementById('modal-leaderboard');
+            if (modal && !modal.classList.contains('hidden')) {
+              window.renderLeaderboardList();
+            }
+          }, (error) => {
+            console.warn("Erro no Firestore:", error);
+          });
+        }
+
+      } catch (err) {
+        console.error("Falha ao inicializar o Firebase:", err);
+      }
+    }
+
+    window.savePlayerToCloud = async function() {
+      if (!window.dbInstance || !window.currentUserId) {
+        window.pendingCloudSave = true;
+        return;
+      }
+      try {
+        window.pendingCloudSave = false;
+        const isArtifact = typeof __firebase_config !== 'undefined' && __firebase_config;
+        const userDocRef = isArtifact
+          ? doc(window.dbInstance, 'artifacts', typeof __app_id !== 'undefined' ? __app_id : 'termif-game', 'public', 'data', 'leaderboard', window.currentUserId)
+          : doc(window.dbInstance, 'leaderboard', window.currentUserId);
+
+        await setDoc(userDocRef, {
+          userId: window.currentUserId,
+          name: state.player.name,
+          course: state.player.course,
+          score: state.player.score,
+          streak: state.player.streak,
+          updatedAt: Date.now()
+        }, { merge: true });
+      } catch (e) {
+        console.error("Erro ao salvar pontuação na nuvem:", e);
+      }
+    };
+
+    setupFirebase();
+  </script>
+
+  <!-- GAME LOGIC SCRIPT -->
+  <script>
+    const DATABASE = {
+      'Técnico em Informática': [
+        { 
+          word: 'ALGORITMO', 
+          meaning: 'Sequência finita de instruções bem definidas e estruturadas para resolver um problema.', 
+          application: 'Criação da lógica de autenticação de usuários em uma aplicação web.',
+          hints: [
+            'É o conceito fundamental de passo a passo lógico para resolver qualquer problema computacional.',
+            'Possui 9 letras, começa com "A" e é a base sobre a qual todos os programas são construídos.'
+          ]
+        },
+        { 
+          word: 'SOFTWARE', 
+          meaning: 'Conjunto de programas, dados e instruções que dizem ao computador como executar tarefas.', 
+          application: 'Desenvolvimento do sistema operacional ou de um aplicativo mobile.',
+          hints: [
+            'Refere-se à parte lógica e abstrata dos sistemas (programas e aplicativos).',
+            'É o oposto complementar do Hardware e possui 8 letras.'
+          ]
+        },
+        { 
+          word: 'HARDWARE', 
+          meaning: 'Componentes físicos e tangíveis que compõem um sistema computacional.', 
+          application: 'Instalação e manutenção de memória RAM, processador e placa-mãe.',
+          hints: [
+            'É a parte física e tangível do computador que você pode tocar.',
+            'Inclui componentes como placas, circuitos, memórias e processadores.'
+          ]
+        },
+        { 
+          word: 'REQUISITO', 
+          meaning: 'Condição ou capacidade necessária que um sistema deve possuir para satisfazer o usuário.', 
+          application: 'Levantamento das necessidades do cliente antes de iniciar a codificação do sistema.',
+          hints: [
+            'É uma necessidade ou regra solicitada pelo cliente antes do sistema ser construído.',
+            'Na Engenharia de Software, divide-se em "Funcional" e "Não Funcional".'
+          ]
+        },
+        { 
+          word: 'COMPILADOR', 
+          meaning: 'Programa que traduz o código-fonte escrito em linguagem de alto nível para linguagem de máquina.', 
+          application: 'Transformar um código escrito em C ou C++ em um arquivo executável para o computador.',
+          hints: [
+            'Trata-se do programa que traduz o código-fonte inteiro para linguagem de máquina.',
+            'Gera um arquivo executável (.exe) antes de rodar o programa.'
+          ]
+        },
+        { 
+          word: 'PROTOCOLO', 
+          meaning: 'Conjunto de regras e padrões que orientam como os dados são transmitidos em uma rede.', 
+          application: 'Utilização do HTTPS para navegação segura e criptografada na web.',
+          hints: [
+            'É o conjunto de regras padronizadas que permite a comunicação na rede.',
+            'Exemplos famosos deste conceito incluem HTTP, HTTPS, TCP e IP.'
+          ]
+        },
+        { 
+          word: 'SERVIDOR', 
+          meaning: 'Computador ou sistema dedicado a fornecer dados, recursos ou serviços para outros computadores.', 
+          application: 'Hospedagem de banco de dados e APIs acessadas por milhares de usuários.',
+          hints: [
+            'Computador ou sistema central de alta capacidade encarregado de "servir" clientes na rede.',
+            'Armazena arquivos de sites, bancos de dados e serviços em nuvem.'
+          ]
+        },
+        { 
+          word: 'INTERNET', 
+          meaning: 'Rede global de computadores interconectados que utilizam o conjunto de protocolos IP/TCP.', 
+          application: 'Comunicação entre microsserviços na nuvem distribuídos geograficamente.',
+          hints: [
+            'É a maior rede mundial de computadores interconectados do planeta.',
+            'Surgiu a partir da ARPANET e possibilita a teia global (WWW).'
+          ]
+        },
+        { 
+          word: 'BANCO', 
+          meaning: 'Coleção organizada de dados estruturados e armazenados eletronicamente.', 
+          application: 'Modelagem de tabelas relacionais em PostgreSQL para cadastro de alunos.',
+          hints: [
+            'Local onde armazenamos e organizamos dados em tabelas relacionais ou documentos.',
+            'Frequentemente gerenciado por um SGBD e consultado utilizando a linguagem SQL.'
+          ]
+        },
+        { 
+          word: 'FUNCAO', 
+          meaning: 'Bloco de código reutilizável projetado para executar uma tarefa específica dentro do programa.', 
+          application: 'Criação de uma função em JS para calcular o desconto final do carrinho.',
+          hints: [
+            'Bloco de código reutilizável que recebe parâmetros e pode retornar um valor.',
+            'Evita repetição de código na programação e também é chamada de método.'
+          ]
+        }
+      ],
+      'Técnico em Administração': [
+        { 
+          word: 'GESTÃO', 
+          meaning: 'Processo de planejar, organizar, dirigir e controlar recursos para atingir objetivos.', 
+          application: 'Gerenciamento estratégico de equipes e processos produtivos na empresa.',
+          hints: [
+            'É a prática de gerenciar pessoas, recursos e etapas para alcançar metas.',
+            'Utiliza metodologias como a matriz SWOT e o ciclo PDCA.'
+          ]
+        },
+        { 
+          word: 'FINANÇAS', 
+          meaning: 'Área responsável pela gestão do dinheiro, investimentos, orçamentos e riscos.', 
+          application: 'Elaboração do fluxo de caixa e análise de demonstrativos contábeis.',
+          hints: [
+            'Área administrativa totalmente voltada ao controle do dinheiro, custos e receitas.',
+            'Cuida do fluxo de caixa, investimentos e saúde financeira da organização.'
+          ]
+        },
+        { 
+          word: 'LOGÍSTICA', 
+          meaning: 'Planejamento e controle do fluxo de materiais, informações e suprimentos.', 
+          application: 'Otimização da rota de entrega e controle de estoque de produtos.',
+          hints: [
+            'Área focada no transporte, armazenamento e entrega eficiente de mercadorias.',
+            'Garante que o produto certo chegue no destino final sem atrasos.'
+          ]
+        },
+        { 
+          word: 'RECURSO', 
+          meaning: 'Qualquer elemento (humano, financeiro, material) utilizado para realizar atividades.', 
+          application: 'Alocação de pessoal e verbas para a execução de um novo projeto.',
+          hints: [
+            'Qualquer elemento (humano, material ou financeiro) usado nas tarefas da empresa.',
+            'Como é um elemento limitado, a empresa precisa otimizar o seu uso.'
+          ]
+        },
+        { 
+          word: 'MERCADO', 
+          meaning: 'Ambiente físico ou virtual onde compradores e vendedores realizam trocas comerciais.', 
+          application: 'Análise de público-alvo e pesquisa da concorrência para lançamento de produto.',
+          hints: [
+            'O ambiente (físico ou virtual) onde a oferta e a procura se encontram.',
+            'Movimentado por clientes, concorrentes e tendências de consumo.'
+          ]
+        },
+        { 
+          word: 'EMPRESA', 
+          meaning: 'Organização econômica destinada à produção ou circulação de bens ou serviços.', 
+          application: 'Registro de CNPJ e estruturação do plano de negócios de uma startup.',
+          hints: [
+            'Organização privada ou pública formada para oferecer bens/serviços e gerar valor.',
+            'Formalizada com CNPJ, razão social e equipe de trabalho.'
+          ]
+        },
+        { 
+          word: 'OFERTA', 
+          meaning: 'Quantidade de um produto ou serviço disponível no mercado para venda.', 
+          application: 'Ajuste no preço e volume de fabricação conforme demanda dos consumidores.',
+          hints: [
+            'A quantidade de bens ou serviços colocados à venda pelos produtores.',
+            'Faz par com a "Demanda" na lei fundamental da economia.'
+          ]
+        },
+        { 
+          word: 'DEMANDA', 
+          meaning: 'Quantidade de um bem ou serviço que os consumidores desejam e podem adquirir.', 
+          application: 'Previsão de vendas para datas comemorativas como a Black Friday.',
+          hints: [
+            'Refere-se à procura dos consumidores por um determinado bem ou serviço.',
+            'Quando esta procura dispara e a produção não acompanha, os preços sobem.'
+          ]
+        },
+        { 
+          word: 'PLANEJAR', 
+          meaning: 'Definir objetivos e estabelecer as ações e estratégias necessárias para alcançá-los.', 
+          application: 'Construção do Planejamento Estratégico Anual da organização.',
+          hints: [
+            'Primeira etapa do processo administrativo: traçar metas e estratégias futuras.',
+            'Evita imprevistos e direciona como os recursos serão empregados.'
+          ]
+        },
+        { 
+          word: 'BALANÇO', 
+          meaning: 'Demonstração contábil que reflete a situação financeira e patrimonial em um período.', 
+          application: 'Análise de ativos, passivos e patrimônio líquido ao final do exercício civil.',
+          hints: [
+            'Relatório contábil indispensável que mostra o patrimônio da empresa.',
+            'Compara formalmente os Ativos, Passivos e o Patrimônio Líquido.'
+          ]
+        }
+      ],
+      'Técnico em Eventos': [
+        { 
+          word: 'CERIMONIAL', 
+          meaning: 'Conjunto de regras de etiqueta e protocolo que regem a solenidade de um evento.', 
+          application: 'Organização da ordem de pronunciamento de autoridades em uma formatura.',
+          hints: [
+            'Regras de protocolo e etiqueta seguidas em solenidades e formaturas.',
+            'Determina a composição da mesa de honra e a ordem dos discursos.'
+          ]
+        },
+        { 
+          word: 'LOGÍSTICA', 
+          meaning: 'Coordenação operacional do transporte, montagem, recepção e fornecedores do evento.', 
+          application: 'Garantir que os equipamentos de som e luz cheguem ao local antes do ensaio.',
+          hints: [
+            'Gestão prática da montagem, fornecedores, horários e transporte do evento.',
+            'Garante que som, luz e buffet cheguem ao local exatamente no horário.'
+          ]
+        },
+        { 
+          word: 'ORÇAMENTO', 
+          meaning: 'Previsão detalhada de todas as receitas e custos envolvidos na produção do evento.', 
+          application: 'Cotação com fornecedores de buffet, segurança e estrutura para fechar a planilha.',
+          hints: [
+            'Planilha financeira com o cálculo de todos os custos e receitas previstos.',
+            'Essencial para não estourar os gastos e evitar prejuízos na produção.'
+          ]
+        },
+        { 
+          word: 'DECORAÇÃO', 
+          meaning: 'Ambientação estética do espaço com móveis, iluminação e arranjos adequados ao tema.', 
+          application: 'Criação da cenografia e iluminação cênica para um festival de música.',
+          hints: [
+            'Composição estática e temática do espaço com flores, móveis e cenografia.',
+            'Cria a atmosfera e identidade visual marcante do ambiente.'
+          ]
+        },
+        { 
+          word: 'RECEPÇÃO', 
+          meaning: 'Ato de acolher, credenciar e orientar os participantes ao chegarem ao local.', 
+          application: 'Montagem do balcão de credenciamento com leitura de QR Code para participantes.',
+          hints: [
+            'Atendimento inicial, credenciamento e entrega de crachás na entrada do evento.',
+            'É a primeira impressão presencial do participante ao chegar ao local.'
+          ]
+        },
+        { 
+          word: 'CONTRATO', 
+          meaning: 'Acordo jurídico formal firmado entre o organizador e fornecedores ou clientes.', 
+          application: 'Assinatura dos termos de responsabilidade e horários com a equipe de som.',
+          hints: [
+            'Documento jurídico assinado que garante os direitos e obrigações do evento.',
+            'Fixa prazos, valores, multas e cláusulas em caso de cancelamento.'
+          ]
+        },
+        { 
+          word: 'PALCO', 
+          meaning: 'Estrutura física elevada onde ocorrem as apresentações, palestras ou shows.', 
+          application: 'Dimensionamento e montagem da estrutura do palco principal do congresso.',
+          hints: [
+            'Estrutura elevada onde ficam concentrados os artistas ou palestrantes.',
+            'Centro de atenção do público com iluminação e sonorização direcionadas.'
+          ]
+        },
+        { 
+          word: 'ILUMINAÇÃO', 
+          meaning: 'Projeto de luzes cênicas e operacionais para valorizar cenários e apresentações.', 
+          application: 'Programação da mesa DMX para criar efeitos de luz conforme o momento do show.',
+          hints: [
+            'Projeto visual de luzes cênicas controladas por mesa DMX ou refletores.',
+            'Cria os efeitos visuais e destaca momentos marcantes da solenidade.'
+          ]
+        },
+        { 
+          word: 'AGENDA', 
+          meaning: 'Mapeamento e programação com horários das atrações e atividades do evento.', 
+          application: 'Distribuição dos horários de palestrantes nas salas temáticas da convenção.',
+          hints: [
+            'Cronograma oficial dos horários de todas as palestras, shows e intervalos.',
+            'Evita atrasos no evento e orienta os mestres de cerimônia.'
+          ]
+        }
+      ]
+    };
+
+    let state = {
+      player: {
+        name: 'Jogador',
+        course: 'Técnico em Informática',
+        difficulty: 'Fácil',
+        maxAttempts: 7,
+        score: 0,
+        streak: 0
+      },
+      currentMode: 'unico',
+      boards: []
+    };
+
+    window.onload = function() {
+      const savedPlayer = localStorage.getItem('termif_player');
+      if (savedPlayer) {
+        try {
+          state.player = JSON.parse(savedPlayer);
+        } catch(e) {
+          console.error(e);
+        }
+      }
+      goToHomeScreen();
+    };
+
+    function savePlayerState() {
+      localStorage.setItem('termif_player', JSON.stringify(state.player));
+      if (typeof window.savePlayerToCloud === 'function') {
+        window.savePlayerToCloud();
+      }
+    }
+
+    function normalizeWord(str) {
+      if (!str) return '';
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    }
+
+    function showScreen(screenName) {
+      document.getElementById('screen-home').classList.add('hidden');
+      document.getElementById('screen-register').classList.add('hidden');
+      document.getElementById('screen-selection').classList.add('hidden');
+      document.getElementById('screen-gameplay').classList.add('hidden');
+
+      if (screenName === 'home') {
+        document.getElementById('screen-home').classList.remove('hidden');
+      } else if (screenName === 'register') {
+        document.getElementById('screen-register').classList.remove('hidden');
+      } else if (screenName === 'selection') {
+        updateHeaderAndSelectionScreen();
+        document.getElementById('screen-selection').classList.remove('hidden');
+      } else if (screenName === 'gameplay') {
+        document.getElementById('screen-gameplay').classList.remove('hidden');
+      }
+    }
+
+    function goToHomeScreen() {
+      showScreen('home');
+    }
+
+    function handleHomePlay() {
+      const savedPlayer = localStorage.getItem('termif_player');
+      if (savedPlayer && state.player && state.player.name && state.player.name !== 'Jogador') {
+        showScreen('selection');
+      } else {
+        showScreen('register');
+      }
+    }
+
+    function changePlayer() {
+      showScreen('register');
+    }
+
+    function selectCourse(courseName) {
+      state.player.course = courseName;
+      const btns = document.querySelectorAll('#course-selector .course-btn');
+      btns.forEach(btn => {
+        if (btn.innerText.trim() === courseName) {
+          btn.className = 'course-btn border border-brand-green bg-[#090e1a] text-white rounded-xl p-3 text-xs md:text-sm font-semibold text-center transition-all';
+        } else {
+          btn.className = 'course-btn border border-slate-800 bg-[#090e1a] text-slate-400 rounded-xl p-3 text-xs md:text-sm font-semibold text-center transition-all';
+        }
+      });
+    }
+
+    function selectDifficulty(diffName, maxAttempts) {
+      state.player.difficulty = diffName;
+      state.player.maxAttempts = maxAttempts;
+      const btns = document.querySelectorAll('#diff-selector .diff-btn');
+      btns.forEach(btn => {
+        if (btn.innerText.includes(diffName)) {
+          btn.className = 'diff-btn border border-brand-green bg-[#090e1a] text-white rounded-xl p-3 text-center transition-all';
+        } else {
+          btn.className = 'diff-btn border border-slate-800 bg-[#090e1a] text-slate-400 rounded-xl p-3 text-center transition-all';
+        }
+      });
+    }
+
+    function handleRegister(event) {
+      event.preventDefault();
+      const nameInput = document.getElementById('input-player-name');
+      const nameVal = nameInput ? nameInput.value.trim() : '';
+
+      if (nameVal) {
+        state.player.name = nameVal;
+        savePlayerState();
+        showScreen('selection');
+      } else {
+        showToast('Por favor, informe seu nome!');
+      }
+    }
+
+    function updateHeaderAndSelectionScreen() {
+      document.getElementById('display-player-name').innerText = state.player.name;
+      document.getElementById('display-player-stats').innerText = `${state.player.course} • ${state.player.score} pts • sequência ${state.player.streak}`;
+    }
+
+    function startMode(mode) {
+      state.currentMode = mode;
+      const courseWords = DATABASE[state.player.course] || DATABASE['Técnico em Informática'];
+      
+      let count = 1;
+      if (mode === 'duplo') count = 2;
+      if (mode === 'quarteto') count = 4;
+
+      const shuffled = [...courseWords].sort(() => 0.5 - Math.random());
+      const selectedWords = shuffled.slice(0, count);
+
+      state.boards = selectedWords.map(item => ({
+        targetWord: item.word,
+        cleanWord: normalizeWord(item.word),
+        meaning: item.meaning,
+        application: item.application,
+        hints: item.hints || [
+          `Esta palavra está relacionada ao curso de ${state.player.course}.`,
+          `Possui ${item.word.length} letras e começa com a letra '${item.word[0]}'.`
+        ],
+        revealedHints: [],
+        guesses: [],
+        hintsLeft: 2,
+        currentInputValue: '',
+        solved: false
+      }));
+
+      const modeNames = { 'unico': 'Modo Único', 'duplo': 'Modo Duplo', 'quarteto': 'Modo Quarteto' };
+      document.getElementById('game-mode-title').innerText = modeNames[mode] || 'Modo Único';
+      document.getElementById('game-mode-subtitle').innerText = `${state.player.course} • ${count} termo(s) relacionado(s) ao seu curso`;
+      document.getElementById('game-score-display').innerText = `${state.player.score} pts`;
+      document.getElementById('game-streak-display').innerText = `sequência ${state.player.streak}`;
+
+      const container = document.getElementById('words-boards-container');
+      if (mode === 'unico') {
+        container.className = "grid grid-cols-1 max-w-md mx-auto w-full gap-6";
+      } else if (mode === 'duplo') {
+        container.className = "grid grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto w-full gap-6";
+      } else if (mode === 'quarteto') {
+        container.className = "grid grid-cols-1 sm:grid-cols-2 max-w-5xl mx-auto w-full gap-6";
+      }
+
+      showScreen('gameplay');
+      renderBoards();
+    }
+
+    function resetCurrentChallenge() {
+      startMode(state.currentMode);
+    }
+
+    function goToModeSelection() {
+      showScreen('selection');
+    }
+
+    function getTileStatuses(guess, targetWord) {
+      const result = Array(guess.length).fill('tile-absent');
+      const targetChars = targetWord.split('');
+      const guessChars = guess.split('');
+
+      for (let i = 0; i < guessChars.length; i++) {
+        if (guessChars[i] === targetChars[i]) {
+          result[i] = 'tile-correct';
+          targetChars[i] = null;
+        }
+      }
+
+      for (let i = 0; i < guessChars.length; i++) {
+        if (result[i] !== 'tile-correct') {
+          const indexInTarget = targetChars.indexOf(guessChars[i]);
+          if (indexInTarget !== -1) {
+            result[i] = 'tile-present';
+            targetChars[indexInTarget] = null;
+          } else {
+            result[i] = 'tile-absent';
+          }
+        }
+      }
+
+      return result;
+    }
+
+    function renderBoards() {
+      const container = document.getElementById('words-boards-container');
+      container.innerHTML = '';
+
+      state.boards.forEach((board, index) => {
+        const boardCard = document.createElement('div');
+        boardCard.className = "bg-brand-card border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-xl";
+
+        const totalAttempts = state.player.maxAttempts;
+        const wordLength = board.cleanWord.length;
+
+        let html = `
+          <div>
+            <div class="flex items-center justify-between text-xs font-bold mb-1">
+              <span class="text-brand-green uppercase tracking-wider">PALAVRA ${index + 1} DE ${state.boards.length}</span>
+              <span class="text-slate-400">${totalAttempts} tentativas</span>
+            </div>
+            <div class="text-xs text-slate-400 mb-3">${wordLength} letras</div>
+            
+            ${board.revealedHints && board.revealedHints.length > 0 ? `
+              <div class="mb-4 space-y-2 bg-[#080d1a] border border-amber-500/30 rounded-xl p-3">
+                <div class="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                   PISTAS REVELADAS
+                </div>
+                ${board.revealedHints.map((hintText, hIdx) => `
+                  <div class="text-xs text-slate-300 leading-relaxed pl-2 border-l-2 border-amber-400">
+                    <strong class="text-amber-300">Pista ${hIdx + 1}:</strong> ${hintText}
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+
+            <div class="grid gap-1.5 mb-4" style="grid-template-rows: repeat(${totalAttempts}, minmax(0, 1fr));">
+        `;
+
+        for (let r = 0; r < totalAttempts; r++) {
+          const guess = board.guesses[r] || '';
+          const statuses = guess ? getTileStatuses(guess, board.cleanWord) : [];
+
+          html += `<div class="grid gap-1.5" style="grid-template-columns: repeat(${wordLength}, minmax(0, 1fr));">`;
+          
+          for (let c = 0; c < wordLength; c++) {
+            const letter = guess[c] || '';
+            const tileClass = guess ? statuses[c] : "tile-empty";
+
+            html += `
+              <div class="letter-tile ${tileClass} aspect-square flex items-center justify-center rounded-xl text-sm sm:text-base md:text-lg font-extrabold uppercase">
+                ${letter}
+              </div>
+            `;
+          }
+          html += `</div>`;
+        }
+
+        html += `</div></div>`;
+
+        if (board.solved) {
+          html += `
+            <div class="space-y-2">
+              <div class="bg-brand-green/10 border border-brand-green/30 text-brand-green rounded-xl p-3 text-center font-bold text-sm">
+                ✓ TERMO ENCONTRADO!
+              </div>
+              <button onclick="openExplanationModal(${index})" class="w-full bg-[#111827] hover:bg-[#1f2937] text-amber-400 border border-amber-400/40 text-xs font-bold py-2.5 rounded-xl transition-colors">
+                 VER EXPLICAÇÃO E APLICAÇÃO
+              </button>
+            </div>
+          `;
+        } else if (board.guesses.length >= totalAttempts) {
+          html += `
+            <div class="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 text-center font-bold text-sm">
+              FIM DE TENTATIVAS (${board.targetWord})
+            </div>
+          `;
+        } else {
+          html += `
+            <div class="space-y-3">
+              <input type="text" 
+                id="input-board-${index}"
+                value="${board.currentInputValue}"
+                oninput="updateInputValue(${index}, this.value)"
+                onkeydown="if(event.key==='Enter') submitGuess(${index})"
+                placeholder="DIGITE O TERMO (ACEITA ESPAÇOS)"
+                class="w-full bg-[#090e1a] border border-slate-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 uppercase focus:outline-none focus:border-brand-green transition-colors" />
+
+              <div class="flex items-center gap-2">
+                <button onclick="submitGuess(${index})" class="flex-grow bg-brand-green hover:bg-brand-greenHover text-slate-950 font-black text-xs uppercase tracking-wider py-3 rounded-xl transition-all shadow-md">
+                  TENTAR
+                </button>
+                <button onclick="useHint(${index})" class="bg-[#111827] hover:bg-[#1f2937] text-amber-400 border border-amber-400/40 text-xs font-bold py-3 px-4 rounded-xl transition-colors whitespace-nowrap">
+                   PISTA (${board.hintsLeft})
+                </button>
+              </div>
+
+              <div class="text-[11px] text-center text-slate-400">
+                Valor atual desta palavra: <span class="text-brand-green font-bold">100 pts</span>
+              </div>
+            </div>
+          `;
+        }
+
+        boardCard.innerHTML = html;
+        container.appendChild(boardCard);
+      });
+    }
+
+    function updateInputValue(boardIndex, val) {
+      state.boards[boardIndex].currentInputValue = val.toUpperCase();
+    }
+
+    function submitGuess(boardIndex) {
+      const board = state.boards[boardIndex];
+      if (board.solved || board.guesses.length >= state.player.maxAttempts) return;
+
+      const inputElem = document.getElementById(`input-board-${boardIndex}`);
+      const rawGuess = inputElem ? inputElem.value.trim() : board.currentInputValue;
+      const cleanGuess = normalizeWord(rawGuess);
+
+      if (cleanGuess.length !== board.cleanWord.length) {
+        showToast(`A palavra deve ter exatamente ${board.cleanWord.length} letras!`);
+        return;
+      }
+
+      board.guesses.push(cleanGuess);
+      board.currentInputValue = '';
+
+      if (cleanGuess === board.cleanWord) {
+        board.solved = true;
+        state.player.score += 100;
+        state.player.streak += 1;
+        savePlayerState();
+        renderBoards();
+        openExplanationModal(boardIndex);
+      } else {
+        renderBoards();
+      }
+
+      const allSolved = state.boards.every(b => b.solved);
+      if (allSolved && state.boards.length > 1) {
+        let bonus = 0;
+        if (state.currentMode === 'duplo') bonus = 50;
+        if (state.currentMode === 'quarteto') bonus = 100;
+        state.player.score += bonus;
+        savePlayerState();
+        showToast(`Parabéns! Você concluiu o ${state.currentMode.toUpperCase()} com bônus de +${bonus} pts!`);
+      }
+    }
+
+    function useHint(boardIndex) {
+      const board = state.boards[boardIndex];
+      if (board.hintsLeft <= 0) {
+        showToast('Suas pistas para esta palavra acabaram!');
+        return;
+      }
+
+      board.hintsLeft--;
+      const hintIndex = 2 - board.hintsLeft - 1;
+      const hintText = board.hints[hintIndex] || `Esta palavra pertence ao curso de ${state.player.course}.`;
+
+      if (!board.revealedHints) {
+        board.revealedHints = [];
+      }
+
+      board.revealedHints.push(hintText);
+      showToast(` Pista ${hintIndex + 1} revelada no tabuleiro!`);
+      renderBoards();
+    }
+
+    function openExplanationModal(boardIndex) {
+      const board = state.boards[boardIndex];
+      if (!board) return;
+
+      document.getElementById('exp-word-title').innerText = board.targetWord;
+      document.getElementById('exp-course-tag').innerText = `${state.player.course} • Palavra ${boardIndex + 1}`;
+      document.getElementById('exp-word-meaning').innerText = board.meaning;
+      document.getElementById('exp-word-application').innerText = board.application;
+
+      document.getElementById('modal-explanation').classList.remove('hidden');
+    }
+
+    function closeExplanationModal() {
+      document.getElementById('modal-explanation').classList.add('hidden');
+    }
+
+    function openHowToPlayModal() {
+      document.getElementById('modal-how-to-play').classList.remove('hidden');
+    }
+
+    function closeHowToPlayModal() {
+      document.getElementById('modal-how-to-play').classList.add('hidden');
+    }
+
+    window.renderLeaderboardList = function() {
+      const list = document.getElementById('leaderboard-list');
+      if (!list) return;
+
+      let displayData = [];
+
+      if (window.cloudLeaderboard && window.cloudLeaderboard.length > 0) {
+        displayData = window.cloudLeaderboard;
+      } else {
+        if (state.player.score > 0) {
+          displayData = [{ name: state.player.name, score: state.player.score, course: state.player.course }];
+        }
+      }
+
+      if (displayData.length === 0) {
+        list.innerHTML = `
+          <div class="text-center text-slate-500 text-xs py-8">
+            Nenhum jogador pontuou ainda. Seja o primeiro a jogar!
+          </div>
+        `;
+      } else {
+        list.innerHTML = displayData.map((item, idx) => `
+          <div class="flex items-center justify-between p-3 bg-[#090e1a] rounded-xl border border-slate-800 hover:border-slate-700 transition-colors">
+            <div class="flex items-center gap-3">
+              <span class="font-black ${idx === 0 ? 'text-amber-400' : 'text-brand-green'} text-sm w-5">#${idx + 1}</span>
+              <div>
+                <div class="font-bold text-sm text-white flex items-center gap-1.5">
+                  ${item.name}
+                  ${item.userId && window.currentUserId && item.userId === window.currentUserId ? '<span class="text-[9px] bg-brand-green/20 text-brand-green px-1.5 py-0.5 rounded-full font-extrabold">(VOCÊ)</span>' : ''}
+                </div>
+                <div class="text-[10px] text-slate-400">${item.course || 'Técnico'}</div>
+              </div>
+            </div>
+            <div class="font-black text-sm text-brand-green">${item.score || 0} pts</div>
+          </div>
+        `).join('');
+      }
+    };
+
+    function openLeaderboard() {
+      window.renderLeaderboardList();
+      document.getElementById('modal-leaderboard').classList.remove('hidden');
+    }
+
+    function closeLeaderboard() {
+      document.getElementById('modal-leaderboard').classList.add('hidden');
+    }
+
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-6 right-6 bg-brand-green text-slate-950 font-bold text-xs px-5 py-3 rounded-xl shadow-2xl z-50 transition-all transform translate-y-0';
+      toast.innerText = message;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+    const firebaseConfig = {
+  apiKey: "AIzaSyBQBbKrIgMyRmaeRV72LnHArMW8gix7IOA",
+  authDomain: "termiff-52f04.firebaseapp.com",
+  projectId: "termiff-52f04",
+  storageBucket: "termiff-52f04.firebasestorage.app",
+  messagingSenderId: "399894374678",
+  appId: "1:399894374678:web:3bf34c8eac365afe464837",
+  measurementId: "G-B7FSN4PKFJ"
+};
+  </script>
+</body>
+</html>
